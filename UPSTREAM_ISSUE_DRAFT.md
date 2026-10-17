@@ -1,6 +1,6 @@
 # GitHub Issue draft for `mw00/project-maya`
 
-> **Do not post automatically.** Review the content and choose an appropriate issue/discussion category on the upstream repository after creating your GitHub account. This is a **field report**, not a claim of a bug in current upstream or a benchmark for v1.1.14.
+> **Do not post automatically.** Review the content and choose an appropriate issue/discussion category on the upstream repository before posting publicly. This is a **field report**, not a claim of a bug in current upstream or a benchmark for v1.1.14.
 
 **Suggested title:** Pre-v1.1.14 Pascal field report: GLM-5.3-Flash on 4× Tesla P100 + Quadro GP100 (sm_60)
 
@@ -31,7 +31,7 @@ The build log and original Japanese article are summarized here:
 
 https://note.com/tamiflu_lab/n/ndbda115333f9
 
-I am preparing a separate repository with hardware details and notes. I would be happy to share **sanitized**, reproducible benchmark results after testing a clean upstream version in an isolated environment. Is there a preferred benchmark command / set of measurements for Pascal reports?
+I have prepared a separate GitHub repository with hardware details and notes (currently private and under review; it will be accessible to others only if I publish it): https://github.com/tamiflu-lab/macpro-p100-project-maya-build I would be happy to share **sanitized**, reproducible benchmark results after testing a clean upstream version in an isolated environment. Is there a preferred benchmark command / set of measurements for Pascal reports?
 
 Thanks again to the maintainers and contributors!
 
