@@ -1,39 +1,39 @@
-# GitHub公開前の確認事項
+# Pre-publication review checklist
 
-## 権利とプロジェクト表記
+This repository is currently **private**. Review these items before making it public or submitting an upstream report.
 
-- [ ] Project Maya公式ではないことを冒頭に記載する。
-- [ ] 開発元 `mw00/project-maya` とモデル開発元にリンクする。
-- [ ] **10/15の独自動作確認が10/16の公式リリースに先行した**と説明する。ただし「世界初」「開発元より先に開発」は主張しない。
-- [ ] 公式v1.1.14のPascal対応と、ローカルv1.1.9改変環境の実測を混同しない。
-- [ ] 公式エンジン・モデル重み・商用コードは再配布しない。
-- [ ] 公開する独自ドキュメントのライセンスを必要に応じて自分で選ぶ（このパックにはライセンス指定をまだ含めない）。
+## Attribution and accuracy
 
-## 安全・プライバシー
+- [ ] State clearly that this is an independent field report, **not an official Project Maya release or fork**.
+- [ ] Credit and link to [Project Maya](https://github.com/mw00/project-maya) and the model's upstream developers.
+- [ ] Distinguish the **October 15 local v1.1.9-based experiment** from the **October 16 public v1.1.14 Pascal release**.
+- [ ] Make **no world-first or upstream priority claim**.
+- [ ] Do not attribute our local measurements to an unmodified upstream v1.1.14 build.
+- [ ] Do not redistribute proprietary code, upstream engine files, or model weights.
+- [ ] Choose an appropriate license for original documentation if desired; no license is currently provided.
 
-- [ ] APIキー、アクセストークン、ブラウザCookie、SSH秘密鍵、SMBパスワードを含めない。
-- [ ] 内部IP、MACアドレス、シリアル番号、個人名、ホームディレクトリ名を含めない。
-- [ ] 外部電源・リレー配線の不完全な施工手順を公開しない。
-- [ ] 写真を元画像と照合し、AI編集による型番や銘板の誤生成を確認。
-- [ ] 見せたくない部屋の背景、購入履歴、アカウント情報がないか確認。
+## Secrets and personal information
 
-## 技術・正確性
+- [ ] Exclude API keys, access tokens, browser cookies, SSH keys, and NAS/SMB credentials.
+- [ ] Exclude local IP addresses, MAC addresses, device serials, and personal home-directory paths.
+- [ ] Do not publish unverified multi-PSU wiring instructions or relay pinouts.
+- [ ] Compare photos with originals, especially model labels altered by AI-based processing.
+- [ ] Check room details, receipts, screens, and account information visible in photos.
 
-- [ ] GPU構成：P100×4＋GP100×1、96GB RAM、ドライバー580.178.04。
-- [ ] **80 GBは複数GPUの合計**であり単一VRAMではない。
-- [ ] 16.22 tokens/sと95.54%は測定条件の一例と明示。
-- [ ] 推論速度について、公式v1.1.14の測定と書かない。
-- [ ] CUDA `sm_60` / PCIe / MTPの対処を「個体の記録」として示す。
-- [ ] 原稿と技術記録の誤記、翻訳のニュアンスを公開前に確認。
+## Technical claims
 
-## GitHubへの投稿手順
+- [ ] Hardware: **4× P100 + 1× GP100**, 96 GB system RAM, NVIDIA driver 580.178.04.
+- [ ] Describe 80 GB as **nominal VRAM across separate devices**, not one unified GPU.
+- [ ] Qualify **16.22 tokens/s** and **95.54% expert-cache hits** as single-setup observations.
+- [ ] Describe CUDA `sm_60`, PCIe/BAR, and NextN/MTP changes as *system-specific* observations.
+- [ ] Check the technical terms, version tags, dates, links, and English-language interpretation.
 
-1. [GitHub](https://github.com/signup) でアカウントを作成（本人が認証）。
-2. 新規リポジトリ `macpro-p100-project-maya-build` などを作成。
-3. **最初はPrivateで作成**し、ZIPを展開した内容をアップロード。
-4. READMEのリンク・ファイル名・写真表示を確認。
-5. 必要に応じて写真と生ログの**安全な抜粋**を追加。
-6. 公開してよい内容だけになったらPublicへ変更。
-7. 開発元へ連絡したい場合は `UPSTREAM_ISSUE_DRAFT.md` を見直してIssue/Discussionに投稿。
+## Publication and upstream reporting
 
-noteの記事とは役割が異なり、GitHubには再現条件、実測の制約、互換性の記録を中心に掲載します。
+1. Confirm all README links and file contents on GitHub.
+2. Add only reviewed photographs and sanitized excerpts when available.
+3. Change the visibility from **Private** to **Public** only after an explicit owner review.
+4. Consider submitting the draft in `UPSTREAM_ISSUE_DRAFT.md` as an upstream **Issue or Discussion**, once the report is ready.
+5. Leave this repository's own Issues/Pull requests empty until there is an actual question, bug, or change proposal.
+
+This repository documents experimental hardware bring-up and known limitations; it is not a general-purpose guide or official benchmark leaderboard.
