@@ -1,115 +1,77 @@
-# Mac Pro 2019 × Tesla P100 ×4 + Quadro GP100 — Project Maya / GLM-5.3-Flash 実機構築記録
+# Case study: GLM-5.3-Flash on 4× Tesla P100 + 1× Quadro GP100 in a 2019 Mac Pro
 
-[English](README.en.md) | [詳細構成](docs/HARDWARE.md) | [作業時系列](docs/CHRONOLOGY.md) | [導入・トラブル記録](docs/BUILD_NOTES.md) | [性能記録](docs/BENCHMARKS.md) | [開発元への報告案](UPSTREAM_ISSUE_DRAFT.md)
+[Hardware](docs/HARDWARE.md) | [Chronology](docs/CHRONOLOGY.md) | [Build notes](docs/BUILD_NOTES.md) | [Benchmark notes](docs/BENCHMARKS.md) | [Upstream issue draft](UPSTREAM_ISSUE_DRAFT.md)
 
-> **非公式の実機構築レポートです。** 本リポジトリは [Project Maya](https://github.com/mw00/project-maya) の公式配布物・フォークではありません。エンジンの開発者を名乗るものでもありません。個人所有のMac Proで、旧世代Pascal GPUを5枚使った検証結果とトラブルを記録しています。
+> **Independent community field report, not an official Project Maya release or fork.** This repository documents an actual five-GPU Pascal system and its integration problems. Full credits for Project Maya/Strata belong to its upstream maintainers at [mw00/project-maya](https://github.com/mw00/project-maya).
 
-## この記録の位置付け：公式Pascal実験対応の公開前に行った独自検証
+## Why this report matters: independent pre-release Pascal bring-up
 
-**2026年10月15日、Project Maya `v1.1.9`（10月14日公開）をベースに、Tesla P100 / Quadro GP100の `sm_60` 向け互換性修正を試行し、5GPU構成で推論に到達しました。** この作業は、公式 **`v1.1.14` のPascal実験対応リリース（10月16日公開）より前**の実機検証記録です。
+On **October 15, 2026**, I got inference working on four Tesla P100s and one Quadro GP100 by adapting a local tree based on **Project Maya v1.1.9** (released October 14) for Pascal `sm_60`. The upstream release **v1.1.14**, which publicly introduced **experimental** support for compute capability 6.x, followed on **October 16**.
 
-ただし、**「Pascal対応を世界で初めて実装した」「上流開発者より先に着想・実装した」という主張ではありません。** 上流側での並行開発、PR作成日時、未公開の検証状況については比較していません。また、今回の独自パッチが公式`v1.1.14`より優れているという意味でもありません。
+**This is a chronology of my own working setup, not a claim to have been the first person to implement Pascal support** or to have preceded upstream contributors' internal work or pull requests. The only chronology established here is that my recorded local test preceded the **public v1.1.14 release**. The working code was independently adapted from an older baseline; I have not established which patches overlap with upstream changes.
 
-このリポジトリの価値は、公式の実験的対応リリースを使って動かした報告ではなく、**対応前のベース版を使って実機で何が問題になり、どう切り分けて動作させたか**という一次的な構築記録にあります。[作業時系列と根拠の範囲](docs/CHRONOLOGY.md)をご覧ください。
+See [Chronology and scope of evidence](docs/CHRONOLOGY.md).
 
-## 概要
+## Summary
 
-中古で入手した **Tesla P100 PCIe 16GB ×4** と **Quadro GP100 16GB ×1** を、**Mac Pro 2019 (MacPro7,1)** に搭載し、Ubuntu上で **Project Maya / Strata 系エンジンによるGLM-5.3-Flash系320B級MoEモデル**の推論を確認しました。
+I ran a **GLM-5.3-Flash-family ~320B MoE model** using a **2019 Mac Pro (MacPro7,1)** equipped with **four 16 GB Tesla P100 PCIe GPUs** and **one 16 GB Quadro GP100**. The GP100 was added for display output and also participates in inference. All five cards are Pascal **compute capability 6.0** devices.
 
-狙いは、GPUの単体性能よりも「中古価格に対するGPUメモリ容量」と「多数のGPUを収容できるワークステーションとしての拡張性」を重視することです。これは**万人向けの安価・省電力構成ではありません**。電源・冷却・PCIe・CUDA世代の互換性が重要な課題でした。
+The purpose was to investigate the cost/performance trade-off of used GPUs with comparatively affordable VRAM capacity—not to demonstrate a universally cheap, turnkey, power-efficient, or officially supported setup.
 
-**実際に確認したこと**
+## Hardware and software
 
-- 4枚のTesla P100と1枚のQuadro GP100をLinuxが認識。
-- 5枚のGPUとシステムRAMを使い、GLM-5.3-Flash系モデルの日本語応答を確認。
-- 記録したデコード速度の一例は **16.22 tokens/s**、エキスパートキャッシュのヒット率は **95.54%**。数値は測定した特定条件の記録であり、全環境での保証ではありません。
-- ローカル推論サーバーから応答を取得し、記事作成などの用途に使用。
-
-## 構成
-
-| 項目 | 実機構成 |
+| Component | Configuration |
 |---|---|
-| 本体 | Apple Mac Pro 2019 / MacPro7,1（中古） |
+| Computer | Apple Mac Pro 2019, MacPro7,1 |
 | CPU | Intel Xeon W-3223 |
-| システムRAM | 96 GB（OS上で約94 GiB） |
-| 演算GPU | Tesla P100 PCIe 16 GB ×4 |
-| 追加GPU | Quadro GP100 16 GB ×1（映像出力用に追加、推論にも参加） |
-| GPUメモリ | 公称合計80 GB。ただしGPUごとに独立し、単一の80 GB GPUにはならない |
-| GPUアーキテクチャ | Pascal、CUDA Compute Capability **6.0**（実機確認） |
+| RAM | 96 GB installed (~94 GiB reported by OS) |
+| GPUs | 4× NVIDIA Tesla P100 PCIe 16 GB + 1× Quadro GP100 16 GB |
+| Nominal GPU VRAM | 80 GB total **across independent devices**, not a unified 80 GB allocation |
+| GPU architecture | Pascal, compute capability 6.0 |
 | OS | Ubuntu 24.04 LTS |
-| NVIDIAドライバー | 580.178.04（記録時点） |
-| CUDAビルド環境 | CUDA 12.8、`sm_60` 向け互換性調整を実施 |
-| 電源 | Mac Pro純正電源＋追加の外付けSFX電源 |
-| 推論ソフト | Project Maya / Strata **v1.1.9ベースにローカル修正** |
-| モデル | GLM-5.3-Flash系の低ビット量子化モデル（モデルファイル約92 GiBという当時の記録） |
-| 実行時コンテキスト | 8,192トークン |
+| NVIDIA driver | 580.178.04 |
+| CUDA build environment | CUDA 12.8, with locally adapted `sm_60` compatibility changes |
+| Power | Stock Mac Pro PSU plus an auxiliary external SFX PSU |
+| Inference engine | **Locally modified Project Maya / Strata based on v1.1.9 (`4c9f1b1`)** |
+| Model | Low-bit quantized GLM-5.3-Flash-family model; roughly 92 GiB of model data in the original build notes |
+| Configured context | 8,192 tokens |
 
-[電源と構成の注意点](docs/HARDWARE.md)も参照してください。
+## Observed results (not a standardized benchmark)
 
-### 検証時系列（日本時間での作業記録に基づく）
+- A recorded decode measurement: **16.22 tokens/s**.
+- Recorded expert-cache hit rate: **95.54%** for that measurement.
+- Other responses varied around **15–17 tokens/s**.
+- A Japanese-language response was successfully obtained from the local inference server.
 
-| 日付 | 記録・出来事 |
-|---|---|
-| 2026-10-14 | Project Maya `v1.1.9` 公開（ベース版、`4c9f1b1`） |
-| **2026-10-15** | **`v1.1.9`を独自に`sm_60`向け修正し、P100×4＋GP100×1の推論を検証** |
-| 2026-10-16 | 公式 `v1.1.14` でPascalの実験的対応をリリース |
-| 2026-10-17 | 日本語の構築記録をnoteで公開 |
+These figures are from **one particular machine and setup**. Input length, exact model variant, quantization, cache warming, concurrency and other measurement conditions are not yet fully standardized. Raw logs and a reproducible benchmark procedure need to be prepared. **Do not compare the numbers directly with the upstream benchmark table.**
 
-**比較対象はあくまで公開されたリリース日です。** 公式パッチの着手日やPR提出日より先だったことを証明するものではありません。追加電源の電気配線は安全上、このリポジトリでは配布していません。
+## What required work
 
-## 重要：上流版との違い
+- **PCIe/BAR resource allocation**: Multiple GPUs were initially difficult to enumerate. The working Ubuntu boot configuration includes `pci=realloc`; this is a system-specific workaround, not a universal recommendation.
+- **CUDA `sm_60`**: Locally adapted CUDA compatibility handling was needed with the older engine baseline.
+- **GPU/RAM memory tiers**: The model's weight data exceeds total installed GPU VRAM, and GPU VRAM is not pooled into a single memory allocation. Host RAM is also used.
+- **NextN/MTP**: The working configuration used `STRATA_GLM_NO_MTP=1` to bypass an incompatibility observed with the then-current engine/model conversion.
+- **Power and cooling**: An auxiliary SFX PSU supplements the stock Mac Pro PSU; safe wiring instructions are deliberately not published.
 
-**2026年10月15日時点の独自検証**と、翌10月16日に公開された**公式v1.1.14での実験的Pascal対応**を区別してください。
+## Important upstream-version distinction
 
-**この測定は、現行の公式v1.1.14をそのまま導入した結果ではありません。** 実機にあるProject MayaのGit作業ツリーは、確認時点で **`v1.1.9` (`4c9f1b1`) ベース＋Pascal向けCUDA互換性修正などの未コミット変更**を含んでいます。
+The experimental Pascal support was released upstream on October 16, **after** this machine's October 15 bring-up on a locally modified v1.1.9 tree. This does **not** establish priority over contributors' work or unmerged patches.
 
-開発元の [v1.1.14リリースノート](https://github.com/mw00/project-maya/releases/tag/v1.1.14) には、Pascal (compute capability 6.x) の**実験的サポート**が記載されています。本検証の測定結果をv1.1.14のベンチマークとして扱わないでください。また、ここで使った独自の互換パッチを新しい公式版へ無条件に適用することは推奨しません。
+The **tested working tree is based on Project Maya v1.1.9 with local changes**. Upstream [v1.1.14](https://github.com/mw00/project-maya/releases/tag/v1.1.14) subsequently introduced **experimental Pascal support**, explicitly including the Tesla P40/P100 families. **These results are not a validation of unmodified v1.1.14.** There is no assurance that patches developed for the old baseline are necessary, correct, or safe with the newer upstream code.
 
-詳しくは[構築・互換性メモ](docs/BUILD_NOTES.md)を参照してください。
+This repository intentionally does not redistribute the upstream engine or model weights.
 
-## 性能（測定例）
+## Links
 
-| 指標 | 記録値 |
-|---|---:|
-| デコード速度 | **16.22 tokens/s** |
-| 1トークンの所要時間（換算値） | 約61.7 ms |
-| エキスパートキャッシュヒット率 | **95.54%** |
-| 別の生成時の目安 | おおむね15〜17 tokens/s |
+- [Project Maya (upstream)](https://github.com/mw00/project-maya)
+- [Pascal experimental support release v1.1.14](https://github.com/mw00/project-maya/releases/tag/v1.1.14)
+- [GLM-5.3-Flash](https://huggingface.co/zai-org/GLM-5.3-Flash)
+- [Original Japanese build report on note](https://note.com/tamiflu_lab/n/ndbda115333f9)
 
-**注意：** 入力長、量子化形式、キャッシュ状態、同時実行数、推論モードなどを統一した標準ベンチマークではありません。生ログ・完全な測定条件・ウォームアップ手順は現在整理中です。開発元の公式ベンチマークとの単純比較はできません。
+## Next steps
 
-詳しくは[性能記録](docs/BENCHMARKS.md)に記載します。
+Gather scrubbed raw benchmark logs and the exact quantization/build parameters, test a clean upstream version **in an isolated environment**, and perform systematic comparisons of decode/prefill, power consumption, and long-duration stability. Photographs will only be added after verifying labels and removing identifying details.
 
-## 構築時の主な難関
+## Issues and pull requests
 
-1. **PCIe/BAR** — 複数枚のGPUを認識させるまで切り分けが必要。実機ではLinuxの起動オプションに `pci=realloc` を設定。
-2. **Pascal向けCUDA** — P100/GP100はいずれも`sm_60`。一部のCUDAカーネルが新しいGPUの命令に依存するため、互換性対応とビルド確認が必要。
-3. **モデル配置** — VRAMは5枚合計で80 GB相当ですが、約92 GiBのモデルファイルを丸ごと載せる容量ではありません。システムRAMも使用。
-4. **MTP / NextN** — モデル起動時の互換性問題を切り分け、検証環境では `STRATA_GLM_NO_MTP=1` としてNextNを無効化。
-5. **電源と冷却** — 純正電源に加えて外付けSFX電源を併用。GPUには個別の電力上限を設定。
-
-これらは**この個体での事象と対処**であり、全環境で同じ操作が必要だという意味ではありません。
-
-## 写真
-
-写真は後から追加する想定です。配置案は [images/README.md](images/README.md) を参照してください。画像を公開する前に、ケーブル・ラベル・背景に個人情報がないか確認してください。AIで背景処理した写真には、GPU型番の文字が変化して見える場合があるため、原画と照合したもののみ掲載します。
-
-## 関連リンクとクレジット
-
-- [Project Maya（開発元）](https://github.com/mw00/project-maya) — GLM-5.3-Flash用の推論エンジン・サーバー等を提供。
-- [Project Maya v1.1.14](https://github.com/mw00/project-maya/releases/tag/v1.1.14) — Pascal GPUの実験的サポートについての公式説明。
-- [GLM-5.3-Flashモデル](https://huggingface.co/zai-org/GLM-5.3-Flash)
-- [note：中古P100を4枚、Mac Proに積んで320B級LLMを動かした話](https://note.com/tamiflu_lab/n/ndbda115333f9)
-
-**Project Maya本体やモデル重みは本リポジトリに含めません。** それぞれの開発元とライセンスをご確認ください。
-
-## 今後の予定
-
-- 公式版v1.1.14以降を**既存環境とは別の検証環境**で評価。
-- モデルの量子化名、コマンド、測定ログを伏せるべき情報のない形に整理。
-- GPUごとのPCIeリンク情報・電力・測定条件を揃え、再現性のあるベンチマークを実施。
-- 冷却・消費電力・安定性の長期測定。
-
----
-
-**公開範囲について：** この文書は実機の観測結果を整理したものです。PCの認証情報、プライベートネットワーク構成、内部ログ、モデルファイル、改変前後のエンジン全文は公開しません。実験・改造は自己責任で、十分な安全確認を行ってください。
+This repository currently serves as a **build and experimental field report**, not a standalone implementation of Project Maya. It is normal for its **Issues** and **Pull requests** tabs to be empty. Use Issues for questions, bugs or follow-up tasks, and Pull requests for proposed changes to the files. A potential report to the **upstream** Project Maya maintainers has been drafted in [UPSTREAM_ISSUE_DRAFT.md](UPSTREAM_ISSUE_DRAFT.md); **it has not been submitted**. This repository is private pending final review, so external maintainers cannot access its contents yet.
