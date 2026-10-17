@@ -1,29 +1,31 @@
-# 推論性能の観測記録（暫定）
+# Inference performance: preliminary observations
 
-## 数値
+## Measurements recorded during bring-up
 
-| 測定項目 | 記録値 | 出典・注意点 |
+| Metric | Recorded value | Important qualification |
 |---|---:|---|
-| デコード速度 | **16.22 tokens/s** | 2026年10月の実機記録。標準ベンチではない |
-| 1トークン当たり時間 | 約61.7 ms | 上記デコード速度からの概算 |
-| エキスパートキャッシュヒット率 | **95.54%** | 同条件付近でのログ記録値 |
-| その他の生成 | 約15〜17 tokens/s | 入力やキャッシュで変動 |
-| 実行時コンテキスト | 8,192トークン | ローカルAPIのモデル情報で確認 |
+| Decode throughput | **16.22 tokens/s** | A single reported run in October 2026; not standardized |
+| Approximate time per decoded token | 61.7 ms | Computed from the throughput above |
+| Expert-cache hit rate | **95.54%** | Reported from a corresponding/nearby runtime observation |
+| Other response rates | Approximately 15–17 tokens/s | Varied with prompt and cache conditions |
+| Configured context | 8,192 tokens | Checked using the local model API |
 
-### 再現性に関する注意
+### Limitations
 
-この数値は**構築当時の記録とnote原稿に基づく観測値**です。公開用の生ログ、完全な起動引数、モデルの正確な量子化識別子、ウォームアップ回数、同時実行数、測定用プロンプト、プリフィル速度はまだ整理中です。「Project Maya v1.1.14で16.22 tokens/sを達成」と書くことはできません。
+These figures originate from contemporaneous build observations and the original note report. **Sanitized raw logs, exact launch arguments, the full quantization identifier, warm-up count, concurrent request count, benchmark prompts, and prefill throughput have not yet been collated for public reproducibility.**
 
-約320B級のMoEモデルにおいて、総パラメータすべてが毎トークン同時活性化するわけではありません。
+These measurements were **not** produced by an unmodified Project Maya v1.1.14 build, nor should they be compared directly with official benchmark results.
 
-## 比較可能なベンチマークのために追加する項目
+The model is a roughly 320B-class **mixture-of-experts** model: total parameters are not all active for each generated token.
 
-- 実測日・ソフトウェアのGitコミット・パッチ状態
-- モデルの正式名称と量子化形式
-- 各GPUのPCIeリンク状態、メモリ配置
-- 入力トークン数、生成トークン数、ウォームアップ回数
-- `tokens/s` の定義と測定方法（prefill / decode を分離）
-- コンセント側の実測消費電力、GPU温度、ファン条件
-- 最小値・中央値・最大値、試行回数
+## Required data for a repeatable benchmark
 
-**稼働中のMayaは変更せず、検証用の別環境を作成してから公式新版との比較を実施します。**
+- Measurement date; exact Git revision and local patch status
+- Full model variant, conversion and quantization format
+- PCIe link status and GPU/host-memory placement
+- Prompt and generation lengths, warm-up passes, concurrent users
+- Explicit distinction between prefill and decode throughput
+- Actual wall-socket power, GPU temperatures and cooling configuration
+- Trial count, minimum, median and maximum throughput
+
+**A clean upstream build should be assessed in a separate environment without replacing the currently working Maya installation.**
