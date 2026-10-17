@@ -1,17 +1,16 @@
-Repository name:
+Repository:
 macpro-p100-project-maya-build
 
-Description (English, GitHub About):
+Suggested GitHub About description:
 Pre-v1.1.14 Pascal bring-up: locally adapted Project Maya v1.1.9 on 4x Tesla P100 + Quadro GP100 (Mac Pro 2019).
-
-Description (Japanese):
-公式v1.1.14のPascal実験対応リリース以前に、v1.1.9を独自調整してMac Pro＋P100×4＋GP100で動作確認した記録。
 
 Suggested GitHub topics:
 project-maya, tesla-p100, pascal, cuda, local-llm, mac-pro, multi-gpu, glm
 
-Upstream:
+Upstream Project Maya:
 https://github.com/mw00/project-maya
 
-Japanese note article:
+Original Japanese note article:
 https://note.com/tamiflu_lab/n/ndbda115333f9
+
+This is an independent community hardware field report, not a Project Maya fork or official release.
