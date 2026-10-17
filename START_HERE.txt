@@ -1,10 +1,11 @@
-GitHub掲載準備パック（2026-10-17）
+Private GitHub publication pack, October 17, 2026
 
-1. README.mdを確認してください。
-2. 主題は「公式Pascal実験対応リリース（10月16日）より前に、10月15日v1.1.9を独自調整してP100×4＋GP100×1の動作を確認した記録」です。
-3. 世界初、または開発元に対する実装の先取権を主張しません。
-4. 英語版はREADME.en.md、時系列はdocs/CHRONOLOGY.mdです。
-5. Project Mayaへの報告案はUPSTREAM_ISSUE_DRAFT.mdです。現時点では投稿していません。
-6. このリポジトリにモデル重み・生ログ・本体ソースコード・認証情報は含めていません。
-7. 公開前はPUBLISH_CHECKLIST.mdに従って点検します。
-8. 本リポジトリはまずPrivateで登録し、公開（Public）への変更は所有者の確認後に行います。
+1. Review README.md: it is the primary English-language landing page.
+2. Main claim: the author successfully ran inference on 4x Tesla P100 + 1x Quadro GP100 on October 15 after adapting a local Project Maya v1.1.9 tree, before the October 16 public v1.1.14 release announcing experimental Pascal support.
+3. This does not claim a world-first implementation or priority over upstream maintainers' development.
+4. The timeline and evidence limitations are in docs/CHRONOLOGY.md; engineering details are in docs/.
+5. UPSTREAM_ISSUE_DRAFT.md is a **draft only**. Nothing has been submitted to Project Maya's upstream Issues or Discussions.
+6. No model weights, raw server logs, upstream engine source, credentials, or photos are included.
+7. Use PUBLISH_CHECKLIST.md for review before making the repository public.
+8. The repository is currently Private. Do not change its visibility without the owner's approval.
+9. It is normal for this repository's Issues and Pull requests to be empty until someone has a concrete report or change to submit.
