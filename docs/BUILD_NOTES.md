@@ -1,37 +1,39 @@
-# 構築過程・互換性トラブル記録
+# Build notes and Pascal compatibility troubleshooting
 
-このドキュメントは**実機における問題の観測と対処方針**であり、公式マニュアルや電源配線ガイドではありません。
+This is an **observational field report**, not an official setup guide or instructions for modifying power supplies.
 
-## 作業した時期について
+## Version context
 
-2026年10月15日に、Project Maya **v1.1.9** のローカル作業ツリーにPascal向け修正を適用し、Tesla P100×4＋Quadro GP100×1で推論を確認。公式 **v1.1.14** のPascal実験対応公開は10月16日でした。これは開発者間の優先権を主張するものではありません。[詳細時系列](CHRONOLOGY.md)。
+On **October 15, 2026**, inference ran on **4× Tesla P100 PCIe 16 GB and 1× Quadro GP100** using a **locally modified Project Maya v1.1.9** tree. Upstream v1.1.14 announced experimental Pascal support in its **October 16 public release**. This document does not claim priority over upstream development work. See the [timeline and scope](CHRONOLOGY.md).
 
-## 1. 多数GPUの認識とPCIe/BAR
+## 1. Multi-GPU PCIe / BAR resource allocation
 
-複数枚のTesla P100搭載時に、PCIeリソース割当・起動に問題がありました。カードを減らして起動するなど切り分け、Ubuntuの起動パラメータに `pci=realloc` を利用する構成に至りました。
+Installing several older GPUs caused difficulties allocating PCIe resources and enumerating all devices. The investigation included bringing the system up with fewer cards installed and checking detection incrementally. The ultimately working Ubuntu boot configuration included `pci=realloc`.
 
-- **確認済み：** 最終的に `nvidia-smi` が5枚すべてを列挙。
-- **未確認：** 別のMac Proやファームウェアでも同じパラメータが必要か。
-- **注意：** ブート設定の変更は起動不能のリスクがあるため、復旧手段を確保してください。
+- **Observed result:** All five cards were enumerated by `nvidia-smi`.
+- **Not established:** That the same parameter is necessary or appropriate on other Mac Pros, firmware versions, or systems.
+- **Caution:** Altering bootloader/kernel parameters can make a system unbootable. Have a recovery method available.
 
-## 2. Pascal (`sm_60`) 互換性
+## 2. CUDA Pascal compute capability `sm_60`
 
-Tesla P100 PCIeとQuadro GP100はいずれもCompute Capability **6.0** です。稼働中のProject MayaのGit作業ツリーは、**v1.1.9 (`4c9f1b1`)** をベースに未コミット変更を含みます。
+Both Tesla P100 PCIe and Quadro GP100 report **compute capability 6.0**. The working Project Maya tree is based on **v1.1.9, commit `4c9f1b1`**, and contains uncommitted local changes affecting:
 
-- CMakeビルド設定
-- Python推論起動コード
-- `src/kernels/cuda/` の複数のCUDAカーネル
-- `include/strata/kernels/pascal_compat.cuh` 等の互換処理
+- CMake configuration,
+- the Python startup/inference code,
+- multiple CUDA kernels in `src/kernels/cuda/`, and
+- local compatibility code such as `include/strata/kernels/pascal_compat.cuh`.
 
-当時、一部のカーネルが新しいGPU命令に依存していたため、`sm_60` 用の代替処理を試みました。**未監査のローカルパッチは、現段階では公開していません。**
+Some older-baseline kernels depended on instructions unavailable on these `sm_60` devices. The work explored alternate compatibility implementations and rebuilt the code for Pascal. **The unreviewed local source patches are not included in this report.**
 
-上流版[Project Maya v1.1.14](https://github.com/mw00/project-maya/releases/tag/v1.1.14)は後に実験的Pascal対応を発表しました。公式版との実装差分の比較およびクリーンビルド評価は今後の課題です。稼働環境をそのまま上書きする予定はありません。
+Upstream [v1.1.14](https://github.com/mw00/project-maya/releases/tag/v1.1.14) later announced experimental Pascal support. Detailed source-diff analysis and reproducible testing on a clean release remain outstanding. The running installation has **not** been overwritten with a new release.
 
-## 3. GPU・システムRAMのメモリ階層
+## 3. Host RAM and multi-GPU memory tiers
 
-モデルデータは構築時の記録で約92 GiB。5枚のGPUに搭載した公称VRAMは計80 GBですが、単一の80 GB GPUとして扱うことはできません。Strataのメモリ階層を使ってホストRAMにもデータを配置しました。
+The model data in the build notes was roughly **92 GiB**. The five GPUs have a total of 80 GB nominal VRAM across separate devices, which is not enough for an all-GPU placement of that model data. The engine uses system RAM as well.
 
-| GPU | 対象レイヤー（当時の構築記録の一例） |
+An example of the recorded layer allocation:
+
+| Device | Model layer range |
 |---|---|
 | Tesla P100 #1 | 0–11 |
 | Tesla P100 #2 | 12–22 |
@@ -39,18 +41,18 @@ Tesla P100 PCIeとQuadro GP100はいずれもCompute Capability **6.0** です�
 | Tesla P100 #4 | 33–40 |
 | Quadro GP100 | 41–44 |
 
-この例は全エキスパートがGPUに常駐したという意味ではなく、モデル・量子化・GPUの状況に依存します。
+This table does **not** imply that all mixture-of-experts weights resided on the GPUs. Expert caching and placement depend on the model, quantization, and runtime.
 
-## 4. NextN / MTP
+## 4. NextN / MTP compatibility
 
-初期の起動で、モデルのNextN重みの扱いに関する問題が発生。原因を切り分けるため `STRATA_GLM_NO_MTP=1` で補助的な予測を無効化してモデル本体の推論を優先しました。この設定が現行公式版にも必要とは限りません。
+An early startup issue involved NextN weights and their handling by the then-current model conversion / engine. During troubleshooting, the working configuration used `STRATA_GLM_NO_MTP=1` to disable an auxiliary prediction path and allow inference using the primary model. This workaround may be unnecessary in newer upstream releases.
 
-## 5. 再現性の改善予定
+## 5. Work still needed for reproducibility
 
-1. 公式版と独自修正版を分離して比較。
-2. モデル名・量子化形式・ハッシュを整理。
-3. 推論プロンプト、入力長、ウォームアップ、出力長を固定。
-4. プリフィル・デコードの速度を別々に測定。
-5. 電力・温度・GPUメモリ階層とサニタイズしたログを添える。
+1. Compare the modified historical version against upstream in **separate test environments**.
+2. Record the exact model variant, quantization, and hashes.
+3. Fix benchmark prompts, input/output token counts, warm-up runs, and concurrency.
+4. Measure prefill and decode rates separately.
+5. Publish sanitized results including GPU tiering, temperatures, and actual system power.
 
-関連：[ハードウェア](HARDWARE.md)／[ベンチマーク](BENCHMARKS.md)
+Related pages: [hardware](HARDWARE.md) and [benchmark notes](BENCHMARKS.md).
