@@ -1,19 +1,19 @@
-# 写真を追加する場合
+# Adding photographs
 
-公開前に写真を原画と照合し、写っている機材や個人情報を確認してください。
+Photos should be added only after confirming their accuracy against the original source images and checking for identifying information.
 
-おすすめの配置：
+Suggested files:
 
-- `macpro-p100-front.jpg`：Tesla P100×4＋Quadro GP100を搭載した本体の全景
-- `macpro-p100-cabling.jpg`：外付けSFX電源と配線の概観（安全性を確認できない施工ガイドにはしない）
-- `p100-card.jpg`：Tesla P100の単体写真
+- `macpro-p100-front.jpg` — overall view of the Mac Pro with four Tesla P100 cards plus a Quadro GP100.
+- `macpro-p100-cabling.jpg` — auxiliary SFX PSU and wiring overview; not intended as an electrical installation guide.
+- `p100-card.jpg` — individual Tesla P100 card.
 
-画像の確認事項：
+## Pre-upload review
 
-1. 自分で撮影した写真であること。
-2. 背景、機材ラベル、製造番号、端末画面、書類に個人情報がないこと。
-3. **AI加工でGPU側面の型番が「P1000」などに変わっていないこと**。元画像と照合すること。
-4. AIによる背景処理を行った場合はキャプションで説明すること。
-5. 配線写真を安全性の保証や製作手順として扱わないこと。
+1. Use photos you own or have permission to publish.
+2. Inspect the background, device labels, serial numbers, visible screens, paperwork and other personal details.
+3. **Check that image processing did not invent or change GPU model labels (for example, turning "P100" into "P1000").** Compare with the unedited photo.
+4. Disclose any AI-assisted background replacement or other significant image editing in the caption.
+5. Do not present a cabling photo as evidence that power modifications are electrically safe.
 
-現在のリポジトリには写真を含めていません。検証済みの画像のみ、後で追加します。
+No photographs are committed to this repository at present. Only reviewed images should be added.
