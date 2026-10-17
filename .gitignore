@@ -1,0 +1,19 @@
+# Do not commit credentials, raw logs, model weights, local environments
+.env
+.env.*
+*.key
+*.pem
+*.p12
+*.secret
+*.token
+*credentials*
+*password*
+*.log
+*.gguf
+*.safetensors
+*.bin
+__pycache__/
+.venv/
+venv/
+.DS_Store
+Thumbs.db
