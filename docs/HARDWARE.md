@@ -1,47 +1,47 @@
-# 実機構成・電源と冷却
+# Hardware, auxiliary power, and cooling
 
-以下は2026年10月17日に確認した構成と、構築当時の記録に基づきます。
+These specifications describe the observed setup as of October 17, 2026, with additional details taken from the October 15 bring-up notes.
 
-## ハードウェア
+## Hardware
 
-| 項目 | 内容 | 確認方法／注意 |
+| Component | Configuration | Evidence / qualification |
 |---|---|---|
-| Mac Pro | 2019、MacPro7,1 | 実機構築記録 |
-| CPU | Xeon W-3223 | 実機構築記録 |
-| RAM | 96 GB | OS上は約94 GiB |
-| GPU 0–3 | NVIDIA Tesla P100-PCIE-16GB ×4 | `nvidia-smi`で認識を確認 |
-| GPU 4 | NVIDIA Quadro GP100 16GB ×1 | 映像出力のため追加、推論にも参加 |
-| Compute Capability | 6.0 ×5 | `nvidia-smi`で確認 |
-| OS | Ubuntu 24.04.5 LTS | `/etc/os-release` |
-| NVIDIA Driver | 580.178.04 | `nvidia-smi` |
-| CUDA | 12.8（ビルド用） | 構築記録 |
-| 推論用の設定 | 8,192トークンのコンテキスト | ローカルAPI応答を確認 |
+| Workstation | Apple Mac Pro 2019, MacPro7,1 | Original build record |
+| CPU | Intel Xeon W-3223 | Original build record |
+| System memory | 96 GB installed | Approximately 94 GiB reported by the OS |
+| GPU 0–3 | 4× NVIDIA Tesla P100-PCIE-16GB | All enumerated by `nvidia-smi` |
+| GPU 4 | 1× NVIDIA Quadro GP100 16 GB | Added for display output; also used for inference |
+| Compute capability | 6.0 on all five GPUs | `nvidia-smi` |
+| Operating system | Ubuntu 24.04.5 LTS | `/etc/os-release` |
+| NVIDIA driver | 580.178.04 | `nvidia-smi` |
+| CUDA build environment | CUDA 12.8 | October 15 build record |
+| Inference context | 8,192 tokens | Local model API response |
 
-公称GPUメモリを単純加算すると80 GBですが、**各GPUのVRAMは独立**しています。モデル全体を保持するため、システムRAMなどとのメモリ階層を利用しました。
+The GPUs have **80 GB of nominal device VRAM in total, distributed among five separate devices**. The memory is **not a single unified 80 GB allocation**. The system also uses host RAM in the inference engine's memory hierarchy.
 
-## 電源
+## Power supplies
 
-**Mac Pro純正電源＋外付けSFX電源**を使用。補助電源系統の追加が必要でした。
+The system uses the **stock Mac Pro power supply plus an auxiliary external SFX PSU** to provide additional GPU power.
 
-| GPU | 個数 | 1枚あたりの設定上限（実消費電力ではありません） |
+| GPU | Number of cards | Configured power limit per card; NOT measured consumption |
 |---|---:|---:|
 | Tesla P100 | 4 | 150 W |
 | Quadro GP100 | 1 | 118 W |
 
-**安全上の注意：** 複数電源の併用、リレーでの起動連動、独自ケーブル・コネクタには誤配線・過電流・火災・感電の危険があります。本リポジトリでは配線図、ピン割り当て、電源改造の具体的施工指示、安全性の保証を提供しません。専門家による検証、適切な保護機構と接地の確認が必要です。
+**Electrical safety warning:** Using multiple power supplies, relay-based power sequencing, nonstandard adapters, or custom connectors can create electrical shock, overcurrent, fire, and hardware-damage hazards. This repository provides **no wiring schematic, PSU modification instructions, pinout, or electrical safety certification**. Any such system requires qualified review of power distribution, grounding, protection, and sequencing.
 
-## 冷却・実測上の限界
+## Cooling and measurement limitations
 
-- GPUの電力上限とコンセント側の実消費電力は別です。
-- P100 PCIeは冷却・エアフローの確保が重要です。
-- 温度、ファン構成、24時間負荷の安定性などの比較可能な測定は今後の予定です。
-- メーカー標準構成ではありません。
+- The configured GPU power limit is not the same as actual wall-socket power draw.
+- PCIe Tesla P100 cards require sufficient cooling airflow.
+- Comparable controlled measurements of temperatures, fans, sustained load, and system-wide power draw remain future work.
+- This is not a manufacturer-supported standard hardware configuration.
 
-## 読み取り専用の確認例
+## Read-only diagnostics example
 
 ```bash
 nvidia-smi --query-gpu=index,name,memory.total,compute_cap,driver_version,power.limit --format=csv,noheader
 cat /etc/os-release
 ```
 
-公開前に出力の個体識別情報・認証情報・ユーザー名などをご確認ください。
+Before publishing diagnostic output, review it for serial numbers, usernames, local host details, and other identifying information.
